@@ -2,7 +2,7 @@
   description = "An empty project that uses Zig.";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.05";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
     flake-utils.url = "github:numtide/flake-utils";
     zig.url = "github:mitchellh/zig-overlay";
 
@@ -35,8 +35,9 @@
         pkgs = import nixpkgs {inherit overlays system;};
       in rec {
         devShells.default = pkgs.mkShell {
-          nativeBuildInputs = [
-            zig.packages.${system}."0.14.0"
+          nativeBuildInputs = with pkgs; [
+            zigpkgs."0.13.0"
+            zls
           ];
         };
 
