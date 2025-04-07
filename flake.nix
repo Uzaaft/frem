@@ -17,6 +17,7 @@
     self,
     nixpkgs,
     flake-utils,
+    zig,
     ...
   } @ inputs: let
     overlays = [
@@ -34,8 +35,8 @@
         pkgs = import nixpkgs {inherit overlays system;};
       in rec {
         devShells.default = pkgs.mkShell {
-          nativeBuildInputs = with pkgs; [
-            zigpkgs.master
+          nativeBuildInputs = [
+            zig.packages.${system}."0.14.0"
           ];
         };
 
