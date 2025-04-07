@@ -17,6 +17,7 @@
     self,
     nixpkgs,
     flake-utils,
+    zig,
     ...
   } @ inputs: let
     overlays = [
