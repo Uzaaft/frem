@@ -1,8 +1,8 @@
-query Teams {
-        teams {
-            nodes {
-                id
-                name
-            }
-        }
+{
+  teams {
+    nodes {
+      id
+      name
     }
+  }
+}
