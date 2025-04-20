@@ -1,7 +1,0 @@
-query Team($teamId: String!) {
-        team(id: $teamId) {
-            id
-            name
-            description
-        }
-    }

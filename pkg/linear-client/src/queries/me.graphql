@@ -1,4 +1,4 @@
-query Me {
+{
   viewer {
     id
     name
