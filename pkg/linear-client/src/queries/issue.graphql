@@ -1,0 +1,22 @@
+query Issue($issueId: String!) {
+        issue(id: $issueId) {
+            id
+            title
+            description
+            state {
+                id
+                name
+            }
+            team {
+                id
+                name
+            }
+            comments {
+                nodes {
+                    id
+                    body
+                    createdAt
+                }
+            }
+        }
+    }
