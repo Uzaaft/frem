@@ -1,6 +1,7 @@
 const std = @import("std");
 const models = @import("./models.zig");
 const queries = @import("./queries.zig");
+const response = @import("./Response.zig");
 
 const LINEAR_URL = "https://api.linear.app/graphql";
 
@@ -37,16 +38,27 @@ pub const Client = struct {
         self.* = undefined;
     }
 
+    /// Build a properly formatted GraphQL query payload
+    fn buildQueryPayload(self: *Client, query: []const u8) ![]const u8 {
+        var escaped_query = std.ArrayList(u8).init(self.alloc);
+        defer escaped_query.deinit();
+
+        try std.json.stringify(query, .{}, escaped_query.writer());
+
+        return try std.fmt.allocPrint(self.alloc, "{{\"query\":{s}}}", .{escaped_query.items});
+    }
+
     // Execute a request,
     // I believe payload could be a comptime generic.
     // That way, we can do the stringification inside this func body
     // Could we do seperate stuff for the graphQL schema, and the output?
     fn post(self: *Client, schema: []const u8) !std.ArrayList(u8) {
         std.log.info("Requesting data from endpoint: {s}", .{LINEAR_URL});
-        _ = schema;
 
-        
-        const payload = "{ \"query\": \"{ issues { nodes { id title } } }\" }";
+        const payload = try self.buildQueryPayload(schema);
+        defer self.alloc.free(payload);
+
+        std.log.info("Payload: {s}", .{payload});
 
         //We can set up any headers we want
         const headers = &[_]std.http.Header{
@@ -76,14 +88,23 @@ pub const Client = struct {
             res.status,
         });
 
-        std.log.err("{s} \n", .{response_body.items});
+        std.log.debug("{s} \n", .{response_body.items});
 
         return response_body;
     }
 
-    pub fn me(self: *Client) !models.Me {
-        const res = try self.post(queries.ME);
-        const result = try std.json.parseFromSlice(models.Me, self.alloc, res.items, .{ .ignore_unknown_fields = true });
+    pub fn issue(self: *Client) !response.IssueResponse(models.Issue) {
+        const res = try self.post(queries.ISSUE);
+        defer res.deinit();
+        const result = try std.json.parseFromSlice(response.IssueResponse(models.Issue), self.alloc, res.items, .{ .ignore_unknown_fields = true });
+        defer result.deinit();
+        return result.value;
+    }
+
+    pub fn teams(self: *Client) !response.TeamsResponse(models.Teams) {
+        const res = try self.post(queries.TEAMS);
+        defer res.deinit();
+        const result = try std.json.parseFromSlice(response.TeamsResponse(models.Teams), self.alloc, res.items, .{ .ignore_unknown_fields = true });
         defer result.deinit();
         return result.value;
     }
