@@ -7,6 +7,8 @@ test "Test Client" {
     var c = try Client.init(alloc);
     defer c.deinit(); // Clean up resources
 
-    const res = try c.me();
-    _ = res;
+    const issues = try c.issue();
+    const teams = try c.teams();
+    _ = issues;
+    _ = teams;
 }
