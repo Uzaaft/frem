@@ -1,0 +1,14 @@
+{
+  issues {
+    nodes {
+      id
+      title
+      createdAt
+      updatedAt
+      # archivedAt
+      # team
+      # project
+      # creator
+    }
+  }
+}

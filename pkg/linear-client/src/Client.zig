@@ -81,7 +81,6 @@ pub const Client = struct {
         if (res.status != std.http.Status.ok) {
             std.log.err("Response status: {d}\n", .{res.status});
             std.log.err("{s} \n", .{response_body.items});
-            std.log.err("{s} \n", .{payload});
             return error.WrongStatusResponse;
         }
         std.log.info("Response Status: {d}\n ", .{
@@ -93,10 +92,18 @@ pub const Client = struct {
         return response_body;
     }
 
-    pub fn issue(self: *Client) !response.IssueResponse(models.Issue) {
-        const res = try self.post(queries.ISSUE);
+    pub fn issueWithTitleID(self: *Client) !response.IssueResponse(models.IssueTitleID) {
+        const res = try self.post(queries.ISSUE_TITLE_ID);
         defer res.deinit();
-        const result = try std.json.parseFromSlice(response.IssueResponse(models.Issue), self.alloc, res.items, .{ .ignore_unknown_fields = true });
+        const result = try std.json.parseFromSlice(response.IssueResponse(models.IssueTitleID), self.alloc, res.items, .{ .ignore_unknown_fields = true });
+        defer result.deinit();
+        return result.value;
+    }
+
+    pub fn issueAllMeta(self: *Client) !response.IssueResponse(models.IssueAllMeta) {
+        const res = try self.post(queries.ISSUE_ALL_META);
+        defer res.deinit();
+        const result = try std.json.parseFromSlice(response.IssueResponse(models.IssueAllMeta), self.alloc, res.items, .{ .ignore_unknown_fields = true });
         defer result.deinit();
         return result.value;
     }
