@@ -1,5 +1,7 @@
 /// Issue query
-pub const ISSUE = @embedFile("./queries/issue.graphql");
+pub const ISSUE_TITLE_ID = @embedFile("./queries/issueTitleID.graphql");
+/// Issue query with all meta
+pub const ISSUE_ALL_META = @embedFile("./queries/issueAllMeta.graphql");
 /// Teams query
 pub const TEAMS = @embedFile("./queries/teams.graphql");
 //TODO: This one got to be verified

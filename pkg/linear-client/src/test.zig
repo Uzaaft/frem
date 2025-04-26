@@ -7,8 +7,10 @@ test "Test Client" {
     var c = try Client.init(alloc);
     defer c.deinit(); // Clean up resources
 
-    const issues = try c.issue();
+    const issuesWithTitleID = try c.issueWithTitleID();
     const teams = try c.teams();
-    _ = issues;
+    const issuesWithAllMeta = try c.issueAllMeta();
+    _ = issuesWithAllMeta;
+    _ = issuesWithTitleID;
     _ = teams;
 }
