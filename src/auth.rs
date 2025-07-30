@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use std::io::{self, Write};
 
 use crate::api::client::LinearClient;
@@ -16,8 +16,8 @@ pub fn ensure_authenticated() -> Result<LinearClient> {
         return LinearClient::new(api_key.clone());
     }
     
-    println!("No authentication found. Choose authentication method:");
-    println!("1) OAuth (recommended)");
+    println!("Choose auth method:");
+    println!("1) OAuth");
     println!("2) API Key");
     print!("> ");
     io::stdout().flush()?;
@@ -30,25 +30,18 @@ pub fn ensure_authenticated() -> Result<LinearClient> {
             let token = oauth::authenticate()?;
             let client = LinearClient::new_with_oauth(token.access_token.clone())?;
             
-            print!("Verifying authentication... ");
-            io::stdout().flush()?;
-            
             match client.get_viewer() {
                 Ok(user) => {
-                    println!("Success! Authenticated as {}", user.name);
-                    config.set_oauth_token(token);
+                    println!("Authenticated as {}", user.name);
+                    config.oauth_token = Some(token);
                     config.save()?;
                     Ok(client)
                 }
-                Err(e) => {
-                    println!("Failed!");
-                    Err(e).context("OAuth authentication failed")
-                }
+                Err(e) => Err(e.into()),
             }
         }
         "2" => {
-            println!("Please enter your Linear API key:");
-            println!("You can get one from: https://linear.app/settings/api");
+            println!("Enter Linear API key:");
             print!("> ");
             io::stdout().flush()?;
             
@@ -58,20 +51,14 @@ pub fn ensure_authenticated() -> Result<LinearClient> {
             
             let client = LinearClient::new(api_key.clone())?;
             
-            print!("Verifying API key... ");
-            io::stdout().flush()?;
-            
             match client.get_viewer() {
                 Ok(user) => {
-                    println!("Success! Authenticated as {}", user.name);
-                    config.set_api_key(api_key);
+                    println!("Authenticated as {}", user.name);
+                    config.api_key = Some(api_key);
                     config.save()?;
                     Ok(client)
                 }
-                Err(e) => {
-                    println!("Failed!");
-                    Err(e).context("Invalid API key")
-                }
+                Err(e) => Err(e.into()),
             }
         }
         _ => anyhow::bail!("Invalid choice"),

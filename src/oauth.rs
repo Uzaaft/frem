@@ -1,15 +1,16 @@
-use anyhow::{Context, Result};
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use base64::Engine;
+use anyhow::Result;
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use rand::{thread_rng, RngCore};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::HashMap;
-use std::io::{Read, Write};
-use std::net::TcpListener;
-use std::sync::mpsc;
-use std::thread;
-use std::time::Duration;
+use std::{
+    collections::HashMap,
+    io::{Read, Write},
+    net::TcpListener,
+    sync::mpsc,
+    thread,
+    time::Duration,
+};
 use url::Url;
 
 use crate::config::OAuthToken;
@@ -42,9 +43,7 @@ pub fn authenticate() -> Result<OAuthToken> {
     
     let auth_url = build_auth_url(&code_challenge, &state)?;
     
-    println!("Opening browser for authentication...");
-    println!("If the browser doesn't open, please visit:");
-    println!("{}", auth_url);
+    println!("Opening browser...\n{}", auth_url);
     
     open::that(auth_url.as_str()).ok();
     
@@ -57,13 +56,7 @@ pub fn authenticate() -> Result<OAuthToken> {
         }
     });
     
-    println!("\nWaiting for authorization...");
-    
-    let code = rx.recv_timeout(Duration::from_secs(300))
-        .context("Timeout waiting for authorization")?
-        .context("Failed to receive authorization code")?;
-    
-    println!("Authorization received! Exchanging for access token...");
+    let code = rx.recv_timeout(Duration::from_secs(300))??;
     
     exchange_code_for_token(&code, &code_verifier)
 }
@@ -119,13 +112,7 @@ fn run_callback_server(tx: mpsc::Sender<Result<String>>, expected_state: &str) -
                 
                 if let (Some(code), Some(state)) = (params.get("code"), params.get("state")) {
                     if state == expected_state {
-                        let response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n\
-                            <html><body>\
-                            <h1>Authentication successful!</h1>\
-                            <p>You can close this window and return to the terminal.</p>\
-                            </body></html>";
-                        stream.write_all(response.as_bytes())?;
-                        stream.flush()?;
+                        stream.write_all(b"HTTP/1.1 200 OK\r\n\r\n<html><body>Success! You can close this window.</body></html>")?;
                         tx.send(Ok(code.to_string()))?;
                         return Ok(());
                     } else {
@@ -155,16 +142,13 @@ fn exchange_code_for_token(code: &str, code_verifier: &str) -> Result<OAuthToken
     let response = client
         .post(TOKEN_URL)
         .json(&token_request)
-        .send()
-        .context("Failed to exchange code for token")?;
+        .send()?;
     
     if !response.status().is_success() {
-        let error_text = response.text()?;
-        anyhow::bail!("Token exchange failed: {}", error_text);
+        anyhow::bail!("Token exchange failed: {}", response.text()?);
     }
     
-    let token_response: TokenResponse = response.json()
-        .context("Failed to parse token response")?;
+    let token_response: TokenResponse = response.json()?;
     
     Ok(OAuthToken {
         access_token: token_response.access_token,

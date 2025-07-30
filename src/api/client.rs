@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -58,16 +58,12 @@ struct PageInfo {
 impl LinearClient {
     pub fn new(api_key: String) -> Result<Self> {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            AUTHORIZATION,
-            HeaderValue::from_str(&api_key).context("Invalid API key")?,
-        );
+        headers.insert(AUTHORIZATION, HeaderValue::from_str(&api_key)?);
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
 
         let client = reqwest::blocking::Client::builder()
             .default_headers(headers)
-            .build()
-            .context("Failed to build HTTP client")?;
+            .build()?;
 
         Ok(Self { client, api_key })
     }
@@ -76,15 +72,13 @@ impl LinearClient {
         let mut headers = HeaderMap::new();
         headers.insert(
             AUTHORIZATION,
-            HeaderValue::from_str(&format!("Bearer {}", access_token))
-                .context("Invalid access token")?,
+            HeaderValue::from_str(&format!("Bearer {}", access_token))?,
         );
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
 
         let client = reqwest::blocking::Client::builder()
             .default_headers(headers)
-            .build()
-            .context("Failed to build HTTP client")?;
+            .build()?;
 
         Ok(Self { client, api_key: access_token })
     }
@@ -131,10 +125,8 @@ impl LinearClient {
             .client
             .post(LINEAR_API_URL)
             .json(&request)
-            .send()
-            .context("Failed to send request")?
-            .json()
-            .context("Failed to parse response")?;
+            .send()?
+            .json()?;
 
         if let Some(errors) = response.errors {
             let error_messages: Vec<String> = errors.iter().map(|e| e.message.clone()).collect();
@@ -178,10 +170,8 @@ impl LinearClient {
             .client
             .post(LINEAR_API_URL)
             .json(&request)
-            .send()
-            .context("Failed to send request")?
-            .json()
-            .context("Failed to parse response")?;
+            .send()?
+            .json()?;
 
         if let Some(errors) = response.errors {
             let error_messages: Vec<String> = errors.iter().map(|e| e.message.clone()).collect();

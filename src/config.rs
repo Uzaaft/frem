@@ -1,8 +1,6 @@
-use anyhow::{Context, Result};
-use dirs::home_dir;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::fs;
-use std::path::PathBuf;
+use std::{fs, path::PathBuf};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
@@ -34,43 +32,25 @@ impl Config {
             return Ok(Self::default());
         }
         
-        let contents = fs::read_to_string(&path)
-            .context("Failed to read config file")?;
-        
-        toml::from_str(&contents)
-            .context("Failed to parse config file")
+        let contents = fs::read_to_string(&path)?;
+        Ok(toml::from_str(&contents)?)
     }
     
     pub fn save(&self) -> Result<()> {
         let path = Self::config_path()?;
         
-        // Create config directory if it doesn't exist
         if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent)
-                .context("Failed to create config directory")?;
+            fs::create_dir_all(parent)?;
         }
-        
-        let contents = toml::to_string_pretty(self)
-            .context("Failed to serialize config")?;
-        
-        fs::write(&path, contents)
-            .context("Failed to write config file")?;
-        
+        fs::write(&path, toml::to_string_pretty(self)?)?;
         Ok(())
     }
     
-    pub fn set_api_key(&mut self, api_key: String) {
-        self.api_key = Some(api_key);
-    }
-    
-    pub fn set_oauth_token(&mut self, token: OAuthToken) {
-        self.oauth_token = Some(token);
-    }
     
     fn config_path() -> Result<PathBuf> {
-        let home = home_dir()
-            .context("Failed to find home directory")?;
-        
-        Ok(home.join(".config").join("linear-tui").join("config.toml"))
+        Ok(dirs::config_dir()
+            .ok_or_else(|| anyhow::anyhow!("No config dir"))?
+            .join("linear-tui")
+            .join("config.toml"))
     }
 }
