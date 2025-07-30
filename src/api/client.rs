@@ -3,7 +3,7 @@ use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use super::types::{Issue, Team, User};
+use super::types::{Issue, User};
 
 const LINEAR_API_URL: &str = "https://api.linear.app/graphql";
 
@@ -70,6 +70,23 @@ impl LinearClient {
             .context("Failed to build HTTP client")?;
 
         Ok(Self { client, api_key })
+    }
+    
+    pub fn new_with_oauth(access_token: String) -> Result<Self> {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {}", access_token))
+                .context("Invalid access token")?,
+        );
+        headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+
+        let client = reqwest::blocking::Client::builder()
+            .default_headers(headers)
+            .build()
+            .context("Failed to build HTTP client")?;
+
+        Ok(Self { client, api_key: access_token })
     }
 
     pub fn get_issues(&self, limit: i32) -> Result<Vec<Issue>> {
