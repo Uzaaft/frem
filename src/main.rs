@@ -7,14 +7,14 @@ use anyhow::Result;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{
+    Terminal,
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     widgets::{Block, Borders, List, ListItem, Paragraph},
-    Terminal,
 };
 use std::io;
 
@@ -86,8 +86,9 @@ impl App {
                         self.issues.len()
                     } else {
                         self.filtered_issues.len()
-                    }.saturating_sub(1);
-                    
+                    }
+                    .saturating_sub(1);
+
                     if self.selected_index < max_index {
                         self.selected_index += 1;
                     }
@@ -103,7 +104,7 @@ impl App {
     fn load_issues(&mut self) {
         self.loading = true;
         self.error = None;
-        
+
         match self.client.get_issues(50) {
             Ok(issues) => {
                 self.issues = issues;
@@ -119,26 +120,29 @@ impl App {
             }
         }
     }
-    
+
     fn filter_issues(&mut self) {
         if self.search_query.is_empty() {
             self.filtered_issues.clear();
         } else {
             let query = self.search_query.to_lowercase();
-            self.filtered_issues = self.issues
+            self.filtered_issues = self
+                .issues
                 .iter()
                 .enumerate()
                 .filter(|(_, issue)| {
                     issue.title.to_lowercase().contains(&query)
                         || issue.identifier.to_lowercase().contains(&query)
-                        || issue.description.as_ref()
+                        || issue
+                            .description
+                            .as_ref()
                             .map(|d| d.to_lowercase().contains(&query))
                             .unwrap_or(false)
                 })
                 .map(|(i, _)| i)
                 .collect();
         }
-        
+
         if self.selected_index >= self.filtered_issues.len() && !self.filtered_issues.is_empty() {
             self.selected_index = self.filtered_issues.len() - 1;
         } else if self.filtered_issues.is_empty() && !self.issues.is_empty() {
@@ -149,7 +153,7 @@ impl App {
 
 fn main() -> Result<()> {
     let client = auth::ensure_authenticated()?;
-    
+
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
@@ -158,7 +162,7 @@ fn main() -> Result<()> {
 
     let mut app = App::new(client);
     app.load_issues();
-    
+
     let res = run_app(&mut terminal, app);
 
     disable_raw_mode()?;
@@ -210,9 +214,13 @@ fn ui(f: &mut ratatui::Frame, app: &App) {
     } else {
         "Linear TUI".to_string()
     };
-    
+
     let header = Paragraph::new(header_text)
-        .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+        .style(
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        )
         .block(Block::default().borders(Borders::ALL));
     f.render_widget(header, chunks[0]);
 
@@ -234,7 +242,7 @@ fn ui(f: &mut ratatui::Frame, app: &App) {
                 .map(|&i| (i, &app.issues[i]))
                 .collect()
         };
-        
+
         let items: Vec<ListItem> = issues_to_display
             .iter()
             .enumerate()
@@ -244,7 +252,7 @@ fn ui(f: &mut ratatui::Frame, app: &App) {
                 } else {
                     Style::default()
                 };
-                
+
                 let state_color = match issue.state.name.as_str() {
                     "Todo" | "Backlog" => Color::Gray,
                     "In Progress" => Color::Yellow,
@@ -252,7 +260,7 @@ fn ui(f: &mut ratatui::Frame, app: &App) {
                     "Canceled" => Color::Red,
                     _ => Color::White,
                 };
-                
+
                 let priority_icon = match issue.priority {
                     0 => "○",
                     1 => "◔",
@@ -260,11 +268,13 @@ fn ui(f: &mut ratatui::Frame, app: &App) {
                     3 => "◕",
                     _ => "●",
                 };
-                
-                let assignee = issue.assignee.as_ref()
+
+                let assignee = issue
+                    .assignee
+                    .as_ref()
                     .map(|u| u.name.chars().take(10).collect::<String>())
                     .unwrap_or_else(|| "Unassigned".to_string());
-                
+
                 let content = format!(
                     "{} {} │ {} │ {} │ {}",
                     priority_icon,
@@ -273,17 +283,21 @@ fn ui(f: &mut ratatui::Frame, app: &App) {
                     format!("{:<10}", assignee),
                     issue.title
                 );
-                
+
                 ListItem::new(content).style(style)
             })
             .collect();
 
         let title = if !app.filtered_issues.is_empty() {
-            format!("Issues ({}/{})", app.filtered_issues.len(), app.issues.len())
+            format!(
+                "Issues ({}/{})",
+                app.filtered_issues.len(),
+                app.issues.len()
+            )
         } else {
             format!("Issues ({})", app.issues.len())
         };
-        
+
         let main_list = List::new(items)
             .block(Block::default().borders(Borders::ALL).title(title))
             .style(Style::default().fg(Color::White));
@@ -295,7 +309,7 @@ fn ui(f: &mut ratatui::Frame, app: &App) {
     } else {
         "[q]uit | [r]efresh | [/] search | [↑/k] up | [↓/j] down"
     };
-    
+
     let footer = Paragraph::new(footer_text)
         .style(Style::default().fg(Color::DarkGray))
         .block(Block::default().borders(Borders::ALL));

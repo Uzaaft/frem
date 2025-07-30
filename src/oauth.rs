@@ -1,6 +1,6 @@
 use anyhow::Result;
-use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
-use rand::{thread_rng, RngCore};
+use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+use rand::{RngCore, thread_rng};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
@@ -40,24 +40,24 @@ pub fn authenticate() -> Result<OAuthToken> {
     let code_verifier = generate_code_verifier();
     let code_challenge = generate_code_challenge(&code_verifier);
     let state = generate_state();
-    
+
     let auth_url = build_auth_url(&code_challenge, &state)?;
-    
+
     println!("Opening browser...\n{}", auth_url);
-    
+
     open::that(auth_url.as_str()).ok();
-    
+
     let (tx, rx) = mpsc::channel();
     let state_clone = state.clone();
-    
+
     thread::spawn(move || {
         if let Err(e) = run_callback_server(tx, &state_clone) {
             eprintln!("Callback server error: {}", e);
         }
     });
-    
+
     let code = rx.recv_timeout(Duration::from_secs(300))??;
-    
+
     exchange_code_for_token(&code, &code_verifier)
 }
 
@@ -96,20 +96,20 @@ fn build_auth_url(code_challenge: &str, state: &str) -> Result<Url> {
 
 fn run_callback_server(tx: mpsc::Sender<Result<String>>, expected_state: &str) -> Result<()> {
     let listener = TcpListener::bind("127.0.0.1:8989")?;
-    
+
     for stream in listener.incoming() {
         let mut stream = stream?;
         let mut buffer = [0; 2048];
         stream.read(&mut buffer)?;
-        
+
         let request = String::from_utf8_lossy(&buffer);
-        
+
         if let Some(line) = request.lines().next() {
             if line.starts_with("GET /callback") {
                 let url = format!("http://localhost{}", &line[4..line.len() - 9]);
                 let parsed = Url::parse(&url)?;
                 let params: HashMap<_, _> = parsed.query_pairs().collect();
-                
+
                 if let (Some(code), Some(state)) = (params.get("code"), params.get("state")) {
                     if state == expected_state {
                         stream.write_all(b"HTTP/1.1 200 OK\r\n\r\n<html><body>Success! You can close this window.</body></html>")?;
@@ -124,13 +124,13 @@ fn run_callback_server(tx: mpsc::Sender<Result<String>>, expected_state: &str) -
             }
         }
     }
-    
+
     Ok(())
 }
 
 fn exchange_code_for_token(code: &str, code_verifier: &str) -> Result<OAuthToken> {
     let client = reqwest::blocking::Client::new();
-    
+
     let token_request = TokenRequest {
         code: code.to_string(),
         redirect_uri: REDIRECT_URI.to_string(),
@@ -138,18 +138,15 @@ fn exchange_code_for_token(code: &str, code_verifier: &str) -> Result<OAuthToken
         code_verifier: code_verifier.to_string(),
         grant_type: "authorization_code".to_string(),
     };
-    
-    let response = client
-        .post(TOKEN_URL)
-        .json(&token_request)
-        .send()?;
-    
+
+    let response = client.post(TOKEN_URL).json(&token_request).send()?;
+
     if !response.status().is_success() {
         anyhow::bail!("Token exchange failed: {}", response.text()?);
     }
-    
+
     let token_response: TokenResponse = response.json()?;
-    
+
     Ok(OAuthToken {
         access_token: token_response.access_token,
         token_type: token_response.token_type,

@@ -17,7 +17,7 @@ pub struct OAuthToken {
 
 impl Default for Config {
     fn default() -> Self {
-        Self { 
+        Self {
             api_key: None,
             oauth_token: None,
         }
@@ -27,26 +27,25 @@ impl Default for Config {
 impl Config {
     pub fn load() -> Result<Self> {
         let path = Self::config_path()?;
-        
+
         if !path.exists() {
             return Ok(Self::default());
         }
-        
+
         let contents = fs::read_to_string(&path)?;
         Ok(toml::from_str(&contents)?)
     }
-    
+
     pub fn save(&self) -> Result<()> {
         let path = Self::config_path()?;
-        
+
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent)?;
         }
         fs::write(&path, toml::to_string_pretty(self)?)?;
         Ok(())
     }
-    
-    
+
     fn config_path() -> Result<PathBuf> {
         Ok(dirs::config_dir()
             .ok_or_else(|| anyhow::anyhow!("No config dir"))?

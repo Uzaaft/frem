@@ -1,5 +1,5 @@
 use anyhow::Result;
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
+use reqwest::header::{AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -67,7 +67,7 @@ impl LinearClient {
 
         Ok(Self { client, api_key })
     }
-    
+
     pub fn new_with_oauth(access_token: String) -> Result<Self> {
         let mut headers = HeaderMap::new();
         headers.insert(
@@ -80,7 +80,10 @@ impl LinearClient {
             .default_headers(headers)
             .build()?;
 
-        Ok(Self { client, api_key: access_token })
+        Ok(Self {
+            client,
+            api_key: access_token,
+        })
     }
 
     pub fn get_issues(&self, limit: i32) -> Result<Vec<Issue>> {
