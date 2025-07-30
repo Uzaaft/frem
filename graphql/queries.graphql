@@ -1,0 +1,86 @@
+query GetIssues($first: Int!, $after: String) {
+  issues(first: $first, after: $after) {
+    edges {
+      node {
+        id
+        identifier
+        title
+        description
+        priority
+        createdAt
+        updatedAt
+        state {
+          id
+          name
+          color
+        }
+        assignee {
+          id
+          name
+          email
+        }
+      }
+      cursor
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+
+query GetIssue($id: String!) {
+  issue(id: $id) {
+    id
+    identifier
+    title
+    description
+    priority
+    createdAt
+    updatedAt
+    state {
+      id
+      name
+      color
+    }
+    assignee {
+      id
+      name
+      email
+    }
+    comments {
+      edges {
+        node {
+          id
+          body
+          createdAt
+          user {
+            id
+            name
+            email
+          }
+        }
+      }
+    }
+  }
+}
+
+query GetViewer {
+  viewer {
+    id
+    name
+    email
+  }
+}
+
+query GetTeams {
+  teams {
+    edges {
+      node {
+        id
+        name
+        key
+      }
+    }
+  }
+}
